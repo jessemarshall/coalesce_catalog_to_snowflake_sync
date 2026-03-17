@@ -138,7 +138,11 @@ Examples:
     api_token = os.getenv("COALESCE_API_TOKEN")
     # Derive API URL from zone
     zone = os.getenv("COALESCE_ZONE", "US").upper()
-    api_url = f"https://api.{zone.lower()}.castordoc.com/public/graphql"
+    zone_urls = {
+        "US": "https://api.us.castordoc.com/public/graphql",
+        "EU": "https://api.castordoc.com/public/graphql",
+    }
+    api_url = zone_urls.get(zone, zone_urls["US"])
 
     # Clean token
     if api_token:
