@@ -91,7 +91,7 @@ jobs:
 
     # Upload current run data as artifact for next run comparison
     - name: Upload catalog data for next run
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: catalog-data
         path: data/catalog_tables_columns_*.json
@@ -99,7 +99,7 @@ jobs:
 
     # Upload SQL files as artifacts
     - name: Upload SQL files
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: sql-files-${{ github.run_number }}
         path: |
@@ -108,7 +108,7 @@ jobs:
 
     # Upload reports as artifacts
     - name: Upload reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: reports-${{ github.run_number }}
         path: |
