@@ -12,6 +12,8 @@ from typing import Dict, List, Set, Tuple, Optional
 from datetime import datetime
 from pathlib import Path
 
+from catalog_to_snowflake.generate_sql import escape_sql_value, format_snowflake_identifier, parse_tag_label
+
 logger = logging.getLogger(__name__)
 
 
@@ -153,8 +155,6 @@ def extract_table_column_tags_with_timestamps(catalog_columns: Dict) -> Tuple[
         - table_tags_with_timestamps: {full_table_name: ({tag_key: tag_value}, updatedAt)}
         - column_tags_with_timestamps: {(full_table_name, column_name): ({tag_key: tag_value}, updatedAt)}
     """
-    from catalog_to_snowflake.generate_sql import parse_tag_label, escape_sql_value
-
     table_tags = {}
     column_tags = {}
 
@@ -855,8 +855,6 @@ def generate_unified_change_sql(current_catalog_columns: Dict, data_dir: str = "
         Tuple of (unified_sql_content, statistics_dict)
         Returns ("", empty stats) if no previous run exists (first run)
     """
-    from catalog_to_snowflake.generate_sql import format_snowflake_identifier, parse_tag_label, escape_sql_value
-
     # First check if there's a previous run
     previous_file_data, previous_filename, last_run_timestamp = load_previous_run_data(data_dir)
 
@@ -986,8 +984,6 @@ def create_new_tags_sql(catalog_columns: Dict[str, Dict], previous_timestamp: st
     Returns:
         SQL content string treating all tags as new
     """
-    from catalog_to_snowflake.generate_sql import format_snowflake_identifier, parse_tag_label, escape_sql_value
-
     statements = []
 
     # Header
