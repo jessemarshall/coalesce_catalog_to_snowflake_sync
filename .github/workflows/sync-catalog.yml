@@ -1,8 +1,8 @@
 name: Coalesce Catalog to Snowflake Sync
 
 on:
-  schedule:
-    - cron: '0 2 * * *'
+  # schedule:
+  #   - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       force_all:
@@ -29,20 +29,14 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Cache Python dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        cache: 'pip'
+        cache-dependency-path: pyproject.toml
 
     - name: Install dependencies
       run: |
@@ -56,7 +50,7 @@ jobs:
     # Download previous run data from artifacts (if exists)
     - name: Download previous run data
       id: download_previous
-      uses: dawidd6/action-download-artifact@v6
+      uses: dawidd6/action-download-artifact@v18
       with:
         name: catalog-data
         path: data/
@@ -180,4 +174,3 @@ jobs:
         echo "1. Download the SQL files from artifacts" >> $GITHUB_STEP_SUMMARY
         echo "2. Review the generated SQL statements" >> $GITHUB_STEP_SUMMARY
         echo "3. Execute in your Snowflake environment" >> $GITHUB_STEP_SUMMARY
-

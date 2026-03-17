@@ -180,43 +180,69 @@ def get_all_snowflake_tables(client: CatalogAPIClient, warehouse_ids: List[str],
         logger.warning("No warehouse IDs provided")
         return []
 
-    # For now, use the first warehouse (can be extended to handle multiple)
-    warehouse_id = warehouse_ids[0]
+    tables: List[Dict] = []
+    total_available = 0
+    seen_table_ids = set()
 
-    logger.info(f"Fetching tables from warehouse: {warehouse_id}")
+    for warehouse_index, warehouse_id in enumerate(warehouse_ids, 1):
+        logger.info(f"Fetching tables from warehouse {warehouse_index}/{len(warehouse_ids)}: {warehouse_id}")
 
-    # If no limit specified, fetch all tables using pagination
-    if limit is None:
-        all_tables = []
-        page = 0
-        page_size = 1000  # Fetch 1000 at a time for maximum efficiency
+        if limit is None:
+            page = 0
+            page_size = 1000
 
-        while True:
-            tables_data = fetch_snowflake_tables(client, warehouse_id, limit=page_size, page=page)
-            tables = tables_data.get("data", [])
-            total_count = tables_data.get("totalCount", 0)
+            while True:
+                tables_data = fetch_snowflake_tables(client, warehouse_id, limit=page_size, page=page)
+                warehouse_tables = tables_data.get("data", [])
+                warehouse_total = tables_data.get("totalCount", 0)
 
-            if page == 0:
-                logger.info(f"Total tables available: {total_count}")
+                if page == 0:
+                    total_available += warehouse_total
+                    logger.info(f"  Total tables available in warehouse: {warehouse_total}")
 
-            all_tables.extend(tables)
-            logger.info(f"  Fetched page {page + 1}: {len(tables)} tables (Total so far: {len(all_tables)})")
+                new_tables = 0
+                for table in warehouse_tables:
+                    table_id = table.get("id")
+                    if table_id and table_id not in seen_table_ids:
+                        seen_table_ids.add(table_id)
+                        tables.append(table)
+                        new_tables += 1
 
-            # Check if we got all tables or no more data
-            if len(tables) < page_size or len(all_tables) >= total_count:
+                logger.info(
+                    f"  Fetched page {page + 1}: {len(warehouse_tables)} tables "
+                    f"({new_tables} new, total so far: {len(tables)})"
+                )
+
+                if len(warehouse_tables) < page_size:
+                    break
+
+                page += 1
+        else:
+            remaining = limit - len(tables)
+            if remaining <= 0:
                 break
 
-            page += 1
+            tables_data = fetch_snowflake_tables(client, warehouse_id, limit=remaining)
+            warehouse_tables = tables_data.get("data", [])
+            warehouse_total = tables_data.get("totalCount", 0)
+            total_available += warehouse_total
 
-        tables = all_tables
-        total_count = len(all_tables)
-    else:
-        # Fetch with specified limit
-        tables_data = fetch_snowflake_tables(client, warehouse_id, limit=limit)
-        tables = tables_data.get("data", [])
-        total_count = tables_data.get("totalCount", 0)
+            new_tables = 0
+            for table in warehouse_tables:
+                table_id = table.get("id")
+                if table_id and table_id not in seen_table_ids:
+                    seen_table_ids.add(table_id)
+                    tables.append(table)
+                    new_tables += 1
+                    if len(tables) >= limit:
+                        break
 
-    logger.info(f"✅ Found {len(tables)} Snowflake tables (Total available: {total_count})")
+            logger.info(
+                f"  Fetched up to {remaining} tables from warehouse "
+                f"({len(warehouse_tables)} returned, {new_tables} new, total so far: {len(tables)})"
+            )
+
+    logger.info(f"✅ Found {len(tables)} Snowflake tables (Total available across warehouses: {total_available})")
 
     if tables:
         logger.info("")
